@@ -1,20 +1,5 @@
 from django.shortcuts import render
 
-from accounts.models import (
-    Patient,
-    HealthcareProvider,
-    Administrator,
-)
-
-from claims.models import Claim
-
-from complaints.models import Complaint
-
-from reports.models import Report
-
-from notifications.models import Notification
-
-
 def landing(request):
     """
     Landing Page
