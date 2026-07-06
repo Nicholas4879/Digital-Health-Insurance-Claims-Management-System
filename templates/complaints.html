@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Inquiry Management{% endblock %}
+
+{% block content %}
+
+{% if error %}
+<div class="alert alert-danger mb-3">{{ error }}</div>
+{% endif %}
+{% if success %}
+<div class="alert alert-success mb-3">{{ success }}</div>
+{% endif %}
+
+{% if request.user.role == "PATIENT" %}
+<div class="card mb-4">
+    <div class="card-header-teal">File an inquiry</div>
+    <div class="p-4">
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="file_complaint">
+
+            <div class="mb-3">
+                <label class="form-label">Claim</label>
+                <input
+                    type="text"
+                    name="claim_search"
+                    class="form-control"
+                    list="claims"
+                    placeholder="Search by claim number, type, or status"
+                    required
+                >
+                <datalist id="claims">
+                    {% for claim in claims %}
+                    <option value="Claim #{{ claim.id }} - {{ claim.claim_type }} - {{ claim.claim_status }} (#{{ claim.id }})"></option>
+                    {% endfor %}
+                </datalist>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Inquiry message</label>
+                <textarea name="complaint_message" class="form-control" rows="3" required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Submit inquiry</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Claim</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                    <th>Response</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for complaint in complaints %}
+                <tr>
+                    <td>#{{ complaint.id }}</td>
+                    <td>Claim #{{ complaint.claim.id }}</td>
+                    <td>{{ complaint.complaint_message }}</td>
+                    <td>
+                        <span class="status-pill
+                            {% if complaint.complaint_status == 'PENDING' %}pill-open
+                            {% else %}pill-resolved
+                            {% endif %}">
+                            {{ complaint.complaint_status|capfirst }}
+                        </span>
+                    </td>
+                    <td>{{ complaint.response|default:"-" }}</td>
+                    <td>
+                        {% if request.user.role == "INSURANCE_PROVIDER" or request.user.is_superuser %}
+                            {% if complaint.complaint_status == "PENDING" or complaint.complaint_status == "UNDER_REVIEW" %}
+                            <form method="POST" style="min-width:200px">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="respond_complaint">
+                                <input type="hidden" name="complaint_id" value="{{ complaint.id }}">
+                                <textarea name="response" class="form-control mb-2" rows="2" placeholder="Write your response..."></textarea>
+                                <button class="act-btn approve">
+                                    <i class="ti ti-send" aria-hidden="true"></i> Send response
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="status-pill pill-resolved">
+                                <i class="ti ti-check" style="vertical-align:-1px;margin-right:3px" aria-hidden="true"></i> Responded
+                            </span>
+                            {% endif %}
+                        {% else %}
+                        <span style="color:#aaa;font-size:12px">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center" style="padding:24px;color:#888">
+                        <i class="ti ti-inbox" style="font-size:24px;display:block;margin-bottom:8px;opacity:.4" aria-hidden="true"></i>
+                        No inquiries found
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

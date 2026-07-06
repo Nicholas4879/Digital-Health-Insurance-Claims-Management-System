@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Claim Verification & Approval{% endblock %}
+
+{% block content %}
+
+{% if error %}
+<div class="alert alert-danger mb-3">{{ error }}</div>
+{% endif %}
+
+
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Patient</th>
+                    <th>Insurance Company</th>
+                    <th>Provider</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Documents</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for claim in claims %}
+                <tr>
+                    <td>#{{ claim.id }}</td>
+                    <td>
+    {{ claim.patient.user.first_name }}
+    {{ claim.patient.user.last_name }}
+</td>
+
+<td>
+    {% if claim.insurance_company %}
+        {{ claim.insurance_company.name }}
+    {% else %}
+        <span class="text-muted">Not Assigned</span>
+    {% endif %}
+</td>
+
+<td>{{ claim.provider.hospital_name }}</td>
+                    <td>{{ claim.claim_type }}</td>
+                    <td>{{ claim.claim_amount }}</td>
+                    <td>
+                        {% for document in claim.document_set.all %}
+                        <div style="margin-bottom:8px">
+                            <div style="font-size:12px;font-weight:500">{{ document.document_name|default:"Claim document" }}</div>
+                            <div style="font-size:11px;color:#666;margin-bottom:4px">
+                                {{ document.document_type }} &middot;
+                                <span class="status-pill
+                                    {% if document.verification_status == 'VERIFIED' %}pill-approved
+                                    {% elif document.verification_status == 'REJECTED' %}pill-rejected
+                                    {% else %}pill-pending
+                                    {% endif %}">
+                                    {{ document.verification_status|capfirst }}
+                                </span>
+                            </div>
+                            <a href="{{ document.file_path.url }}" class="act-btn" target="_blank" rel="noopener">
+                                <i class="ti ti-file-search" aria-hidden="true"></i> View document
+                            </a>
+                        </div>
+                        {% empty %}
+                        <span style="color:#888;font-size:12px">No document uploaded</span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        <span class="status-pill
+                            {% if claim.claim_status == 'PENDING' %}pill-pending
+                            {% elif claim.claim_status == 'APPROVED' %}pill-approved
+                            {% elif claim.claim_status == 'REJECTED' %}pill-rejected
+                            {% endif %}">
+                            {{ claim.claim_status|capfirst }}
+                        </span>
+                    </td>
+                    <td>
+                        <form method="POST" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="claim_id" value="{{ claim.id }}">
+                            <input type="hidden" name="action" value="approve">
+                            <button class="act-btn approve">
+                                <i class="ti ti-check" aria-hidden="true"></i> Approve
+                            </button>
+                        </form>
+                        <form method="POST" style="min-width:220px">
+                            {% csrf_token %}
+                            <input type="hidden" name="claim_id" value="{{ claim.id }}">
+                            <input type="hidden" name="action" value="reject">
+                            <textarea name="rejection_reason" class="form-control mb-2" rows="2" placeholder="Reason for rejection..." required></textarea>
+                            <button class="act-btn reject">
+                                <i class="ti ti-x" aria-hidden="true"></i> Reject
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center" style="padding:24px;color:#888">
+                        <i class="ti ti-inbox" style="font-size:24px;display:block;margin-bottom:8px;opacity:.4" aria-hidden="true"></i>
+                        No claims to review
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

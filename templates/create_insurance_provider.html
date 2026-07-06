@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Create Insurance Provider Account{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header-teal">
+                Create Insurance Provider Account
+            </div>
+
+            <div class="p-4">
+
+                {% if error %}
+                <div class="alert alert-danger">
+                    {{ error }}
+                </div>
+                {% endif %}
+
+                <form method="POST" onsubmit="return validateInsuranceProviderCreation();">
+                    {% csrf_token %}
+
+                    <!-- Personal Information -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">First name</label>
+                            <input type="text" name="first_name" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Last name</label>
+                            <input type="text" name="last_name" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email address</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Password</label>
+                            <input
+                                type="password"
+                                name="password"
+                                id="insurance_password"
+                                class="form-control"
+                                required
+                            >
+                            <div class="form-hint">
+                                Minimum 8 characters, uppercase, lowercase, number and symbol
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Confirm password</label>
+                            <input
+                                type="password"
+                                name="confirm_password"
+                                id="insurance_confirm_password"
+                                class="form-control"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <hr class="form-divider">
+
+                    <!-- Employment Details -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Department</label>
+                            <input
+                                type="text"
+                                name="department"
+                                class="form-control"
+                                placeholder="e.g. Claims Processing"
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Employee ID</label>
+                            <input
+                                type="text"
+                                name="employee_id"
+                                class="form-control"
+                            >
+                        </div>
+                    </div>
+
+<div class="mb-3">
+    <label class="form-label">Insurance Company</label>
+
+    <select name="insurance_company" class="form-select" required>
+        <option value="">Select Insurance Company</option>
+
+        {% for company in insurance_companies %}
+            <option value="{{ company.id }}">
+                {{ company.name }}
+            </option>
+        {% endfor %}
+    </select>
+</div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Job title</label>
+
+                            <select name="job_title" class="form-select">
+                                <option value="">Select job title</option>
+                                <option value="CLAIMS_OFFICER">Claims Officer</option>
+                                <option value="CLAIMS_MANAGER">Claims Manager</option>
+                                <option value="DOCUMENT_VERIFICATION_OFFICER">
+                                    Document Verification Officer
+                                </option>
+                                <option value="UNDERWRITER">Underwriter</option>
+                                <option value="CUSTOMER_SERVICE_OFFICER">
+                                    Customer Service Officer
+                                </option>
+                                <option value="BRANCH_MANAGER">Branch Manager</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Employment type</label>
+
+                            <select name="employment_type" class="form-select">
+                                <option value="FULL_TIME">Full-time</option>
+                                <option value="PART_TIME">Part-time</option>
+                                <option value="CONTRACT">Contract</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Office / Branch</label>
+
+                            <input
+                                type="text"
+                                name="office_branch"
+                                class="form-control"
+                                placeholder="e.g. Nairobi CBD Branch"
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Date joined</label>
+
+                            <input
+                                type="date"
+                                name="date_joined"
+                                class="form-control"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Work phone</label>
+
+                            <input
+                                type="text"
+                                name="work_phone"
+                                class="form-control"
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Work email</label>
+
+                            <input
+                                type="email"
+                                name="work_email"
+                                class="form-control"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            Supervisor / Reporting Manager
+                        </label>
+
+                        <input
+                            type="text"
+                            name="supervisor_name"
+                            class="form-control"
+                        >
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Create Insurance Provider Account
+                    </button>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function validateInsuranceProviderCreation() {
+
+    const password = document.getElementById("insurance_password").value;
+    const confirmPassword = document.getElementById("insurance_confirm_password").value;
+
+    const strongPassword =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+
+    if (!strongPassword.test(password)) {
+        alert(
+            "Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number and one special character."
+        );
+        return false;
+    }
+
+    if (password !== confirmPassword) {
+        alert("Passwords do not match.");
+        return false;
+    }
+
+    return true;
+}
+</script>
+
+{% endblock %}

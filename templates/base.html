@@ -1,0 +1,494 @@
+<!--
+    NOTE (cleanup): base.html is unchanged. It contains no duplicated
+    content on its own — the duplicate nav/branding/auth-button problem only
+    showed up because landing.html was extending THIS dashboard shell.
+    landing.html now extends the new "base_public.html" instead, so this
+    file's sidebar/topbar continues to serve only the authenticated
+    patient/provider/admin dashboard pages, as originally intended.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Digital Health Insurance Claims Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --teal: #0F6E56;
+            --teal-mid: #1D9E75;
+            --teal-light: #E1F5EE;
+            --sidebar-width: 220px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: #F4F6F8;
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            font-size: 14px;
+            color: #1a1a1a;
+        }
+
+        /* ── Layout shell ── */
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--teal);
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0; left: 0;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            padding: 20px 16px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+        .sidebar-logo .abbr {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .sidebar-logo .sys-name {
+            color: rgba(255,255,255,0.75);
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        .role-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            font-size: 10px;
+            letter-spacing: .06em;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-top: 8px;
+        }
+
+        .nav-section { padding: 12px 0 4px; flex: 1; overflow-y: auto; }
+        .nav-section-label {
+            color: rgba(255,255,255,0.45);
+            font-size: 10px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            padding: 0 16px 6px;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 16px;
+            color: rgba(255,255,255,0.75);
+            font-size: 13px;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            transition: background .15s, color .15s;
+        }
+        .nav-item i { font-size: 16px; opacity: .8; }
+        .nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            text-decoration: none;
+        }
+        .nav-item.active {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            border-left-color: #fff;
+            font-weight: 500;
+        }
+        .nav-item.active i { opacity: 1; }
+
+        .sidebar-footer {
+            padding: 12px 16px;
+            border-top: 1px solid rgba(255,255,255,0.12);
+        }
+        .logout-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255,255,255,0.65);
+            font-size: 12px;
+            text-decoration: none;
+        }
+        .logout-link:hover { color: #fff; text-decoration: none; }
+
+        /* ── Main area ── */
+        .main-wrap {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            background: #fff;
+            border-bottom: 1px solid #e8eaed;
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+        }
+        .topbar-title { font-size: 16px; font-weight: 500; }
+        .topbar-right { display: flex; align-items: center; gap: 14px; }
+
+        .notif-icon {
+            position: relative;
+            color: #666;
+            text-decoration: none;
+        }
+        .notif-icon i { font-size: 20px; }
+        .notif-dot {
+            position: absolute;
+            top: -1px; right: -1px;
+            width: 7px; height: 7px;
+            background: #E24B4A;
+            border-radius: 50%;
+        }
+
+        .user-avatar {
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            background: var(--teal-light);
+            color: var(--teal);
+            font-size: 11px; font-weight: 600;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .page-content { padding: 28px; flex: 1; }
+
+        /* ── Cards ── */
+        .card {
+            background: #fff;
+            border: 1px solid #e8eaed;
+            border-radius: 10px;
+            box-shadow: none;
+        }
+        .card-header-teal {
+            background: var(--teal);
+            color: #fff;
+            padding: 14px 18px;
+            border-radius: 10px 10px 0 0;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        /* ── Stat cards ── */
+        .stat-card {
+            background: #fff;
+            border: 1px solid #e8eaed;
+            border-radius: 8px;
+            padding: 16px 18px;
+        }
+        .stat-card.accent-teal  { border-left: 3px solid var(--teal-mid); }
+        .stat-card.accent-amber { border-left: 3px solid #BA7517; }
+        .stat-card.accent-green { border-left: 3px solid #639922; }
+        .stat-card.accent-red   { border-left: 3px solid #E24B4A; }
+        .stat-label { font-size: 11px; color: #666; letter-spacing: .04em; margin-bottom: 6px; }
+        .stat-num   { font-size: 26px; font-weight: 500; line-height: 1; }
+        .stat-sub   { font-size: 11px; color: #888; margin-top: 4px; }
+
+        /* ── Tables ── */
+        .table-wrap { overflow-x: auto; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table th {
+            color: #666;
+            font-weight: 500;
+            font-size: 11px;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid #e8eaed;
+            white-space: nowrap;
+        }
+        .data-table td {
+            padding: 11px 14px;
+            border-bottom: 1px solid #f0f2f4;
+            vertical-align: middle;
+        }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+        .data-table tbody tr:hover td { background: #f9fafb; }
+
+        /* ── Status pills ── */
+        .status-pill {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 3px 9px;
+            border-radius: 20px;
+            letter-spacing: .04em;
+        }
+        .pill-pending  { background: #FAEEDA; color: #BA7517; }
+        .pill-approved { background: #EAF3DE; color: #3B6D11; }
+        .pill-rejected { background: #FAECE7; color: #993C1D; }
+        .pill-resolved { background: #EAF3DE; color: #3B6D11; }
+        .pill-open     { background: #FAEEDA; color: #BA7517; }
+        .pill-unread   { background: #FAEEDA; color: #BA7517; }
+        .pill-read     { background: #f0f2f4; color: #666; }
+
+        /* ── Action buttons ── */
+        .act-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid #e8eaed;
+            background: transparent;
+            cursor: pointer;
+            margin-right: 4px;
+            text-decoration: none;
+            color: #333;
+            font-family: inherit;
+        }
+        .act-btn:hover { background: #f0f2f4; }
+        .act-btn.approve { color: #3B6D11; border-color: #97C459; }
+        .act-btn.approve:hover { background: #EAF3DE; }
+        .act-btn.reject  { color: #993C1D; border-color: #F0997B; }
+        .act-btn.reject:hover { background: #FAECE7; }
+
+        /* ── Forms ── */
+        .form-label { font-size: 12px; font-weight: 500; color: #555; margin-bottom: 5px; }
+        .form-control, .form-select {
+            border: 1px solid #e8eaed;
+            border-radius: 6px;
+            font-size: 13px;
+            padding: 8px 10px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--teal-mid);
+            box-shadow: 0 0 0 3px rgba(29,158,117,0.12);
+            outline: none;
+        }
+        .form-hint { font-size: 11px; color: #888; margin-top: 4px; }
+
+        /* ── Buttons ── */
+        .btn-primary {
+            background: var(--teal);
+            border-color: var(--teal);
+            color: #fff;
+        }
+        .btn-primary:hover { background: var(--teal-mid); border-color: var(--teal-mid); color: #fff; }
+
+        .btn-dark   { background: #2C2C2A; border-color: #2C2C2A; }
+        .btn-warning { background: #BA7517; border-color: #BA7517; color: #fff; }
+        .btn-warning:hover { background: #854F0B; border-color: #854F0B; color: #fff; }
+
+        /* ── Alerts ── */
+        .alert { border-radius: 8px; font-size: 13px; }
+
+        /* ── Divider ── */
+        hr.form-divider { border: none; border-top: 1px solid #e8eaed; margin: 18px 0; }
+
+        /* ── Quick action cards ── */
+        .qa-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+        .qa-card {
+            background: #fff;
+            border: 1px solid #e8eaed;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: border-color .15s;
+        }
+        .qa-card:hover { border-color: var(--teal-mid); text-decoration: none; color: inherit; }
+        .qa-card i { font-size: 24px; color: var(--teal); margin-bottom: 8px; display: block; }
+        .qa-card span { font-size: 12px; color: #555; }
+
+        /* Charts */
+        .chart-card {
+            background: #fff;
+            border: 1px solid #e8eaed;
+            border-radius: 8px;
+            padding: 18px;
+            min-height: 320px;
+        }
+        .chart-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 14px;
+        }
+        .chart-wrap {
+            position: relative;
+            height: 240px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="abbr">DHICMS</div>
+            <div class="sys-name">Health Insurance Claims<br>Management System</div>
+            {% if request.user.is_authenticated %}
+                <div class="role-badge">{{ request.user.role }}</div>
+            {% endif %}
+        </div>
+
+        <nav class="nav-section">
+            {% if request.user.is_authenticated %}
+
+                {% if request.user.role == "PATIENT" %}
+                    <div class="nav-section-label">Overview</div>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'patient_dashboard' %}active{% endif %}" href="{% url 'patient_dashboard' %}">
+                        <i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard
+                    </a>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'track_claim' %}active{% endif %}" href="{% url 'track_claim' %}">
+                        <i class="ti ti-list-search" aria-hidden="true"></i> Track claims
+                    </a>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'patient_profile' %}active{% endif %}" href="{% url 'patient_profile' %}">
+                        <i class="ti ti-user-edit" aria-hidden="true"></i> My profile
+                    </a>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'complaints' %}active{% endif %}" href="{% url 'complaints' %}">
+                        <i class="ti ti-message-report" aria-hidden="true"></i> Inquiries
+                    </a>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}" href="{% url 'notifications' %}">
+                        <i class="ti ti-bell" aria-hidden="true"></i> Notifications
+                    </a>
+                {% endif %}
+
+                {% if request.user.role == "PROVIDER" %}
+                    <div class="nav-section-label">Overview</div>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'provider_dashboard' %}active{% endif %}" href="{% url 'provider_dashboard' %}">
+                        <i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard
+                    </a>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'submit_claim' %}active{% endif %}" href="{% url 'submit_claim' %}">
+                        <i class="ti ti-file-plus" aria-hidden="true"></i> Submit claim
+                    </a>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'track_claim' %}active{% endif %}" href="{% url 'track_claim' %}">
+                        <i class="ti ti-list-search" aria-hidden="true"></i> Submitted claims
+                    </a>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}" href="{% url 'notifications' %}">
+                        <i class="ti ti-bell" aria-hidden="true"></i> Notifications
+                    </a>
+                {% endif %}
+
+                {% if request.user.role == "INSURANCE_PROVIDER" %}
+                    <div class="nav-section-label">Overview</div>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'insurance_dashboard' %}active{% endif %}" href="{% url 'insurance_dashboard' %}">
+                        <i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard
+                    </a>
+                    <div class="nav-section-label" style="margin-top:8px">Claims processing</div>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'manage_claims' %}active{% endif %}" href="{% url 'manage_claims' %}">
+                        <i class="ti ti-list-check" aria-hidden="true"></i> Manage claims
+                    </a>
+                    
+                    <a class="nav-item {% if request.resolver_match.url_name == 'complaints' %}active{% endif %}" href="{% url 'complaints' %}">
+                        <i class="ti ti-message-report" aria-hidden="true"></i> Inquiries
+                    </a>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}" href="{% url 'notifications' %}">
+                        <i class="ti ti-bell" aria-hidden="true"></i> Notifications
+                    </a>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'reports' %}active{% endif %}" href="{% url 'reports' %}">
+                        <i class="ti ti-chart-bar" aria-hidden="true"></i> Reports
+                    </a>
+                {% endif %}
+
+                {% if request.user.role == "ADMIN" or request.user.is_superuser %}
+                    <div class="nav-section-label">Overview</div>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}" href="{% url 'admin_dashboard' %}">
+                        <i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard
+                    </a>
+                    <div class="nav-section-label" style="margin-top:8px">Administration</div>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'create_provider' %}active{% endif %}" href="{% url 'create_provider' %}">
+                        <i class="ti ti-user-plus" aria-hidden="true"></i> Create healthcare provider
+                    </a>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'create_insurance_provider' %}active{% endif %}" href="{% url 'create_insurance_provider' %}">
+                        <i class="ti ti-shield-plus" aria-hidden="true"></i> Create insurance provider
+                    </a>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'manage_users' %}active{% endif %}" href="{% url 'manage_users' %}">
+                        <i class="ti ti-users" aria-hidden="true"></i> Manage users
+                    </a>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'audit_logs' %}active{% endif %}" href="{% url 'audit_logs' %}">
+                        <i class="ti ti-shield-check" aria-hidden="true"></i> Audit logs
+                    </a>
+                    <a class="nav-item {% if request.resolver_match.url_name == 'reports' %}active{% endif %}" href="{% url 'reports' %}">
+                        <i class="ti ti-chart-bar" aria-hidden="true"></i> System reports
+                    </a>
+                {% endif %}
+
+            {% endif %}
+        </nav>
+
+       <div class="sidebar-footer">
+
+    {% if request.user.is_authenticated %}
+
+    <form method="POST" action="{% url 'logout' %}">
+        {% csrf_token %}
+
+        <button
+            type="submit"
+            class="logout-link border-0 bg-transparent w-100 text-start"
+            style="
+                cursor:pointer;
+                color:rgba(255,255,255,0.65);
+                padding:0;
+            "
+        >
+            <i class="ti ti-logout" aria-hidden="true"></i>
+            Sign out
+        </button>
+
+    </form>
+
+    {% else %}
+
+        <a class="logout-link" href="{% url 'logout' %}">
+    <i class="ti ti-logout" aria-hidden="true"></i> Sign out
+</a>
+
+    {% endif %}
+
+</div>
+        
+    </aside>
+
+    <!-- Main content -->
+    <div class="main-wrap">
+        <div class="topbar">
+            <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+            <div class="topbar-right">
+                {% if request.user.is_authenticated %}
+                    <a class="notif-icon" href="{% url 'notifications' %}" aria-label="Notifications">
+                        <i class="ti ti-bell" aria-hidden="true"></i>
+                        <div class="notif-dot"></div>
+                    </a>
+                    <div class="user-avatar">
+                        {{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}
+                    </div>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-sm btn-primary">Sign in</a>
+                    <a href="{% url 'register' %}" class="btn btn-sm btn-outline-secondary">Register</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="page-content">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+</div>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

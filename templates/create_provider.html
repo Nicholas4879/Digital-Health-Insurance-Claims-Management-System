@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Create Healthcare Provider Account{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header-teal">Create healthcare provider account</div>
+            <div class="p-4">
+                {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+
+                <form method="POST" onsubmit="return validateProviderCreation();">
+                    {% csrf_token %}
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">First name</label>
+                            <input type="text" name="first_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Last name</label>
+                            <input type="text" name="last_name" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email address</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" id="provider_password" class="form-control" required>
+                            <div class="form-hint">Min 8 chars, uppercase, number &amp; symbol</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Confirm password</label>
+                            <input type="password" name="confirm_password" id="provider_confirm_password" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <hr class="form-divider">
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Facility / hospital name</label>
+                            <input type="text" name="hospital_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Facility type</label>
+                            <select name="facility_type" class="form-select">
+                                <option value="">Select facility type</option>
+                                <option value="HOSPITAL">Hospital</option>
+                                <option value="CLINIC">Clinic</option>
+                                <option value="DIAGNOSTIC_LAB">Diagnostic Laboratory</option>
+                                <option value="PHARMACY">Pharmacy</option>
+                                <option value="DENTAL">Dental Clinic</option>
+                                <option value="MATERNITY">Maternity Home</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">License number</label>
+                            <input type="text" name="license_number" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">MOH / KMPDC registration number</label>
+                            <input type="text" name="moh_registration_number" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Specialization</label>
+                        <input type="text" name="specialization" class="form-control" placeholder="e.g. General Medicine, Cardiology">
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">County</label>
+                            <input type="text" name="county" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Bed capacity</label>
+                            <input type="number" name="bed_capacity" class="form-control" min="0">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Physical address</label>
+                        <textarea name="physical_address" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Facility phone</label>
+                            <input type="text" name="facility_phone" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Facility email</label>
+                            <input type="email" name="facility_email" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Date established</label>
+                        <input type="date" name="date_established" class="form-control">
+                    </div>
+
+                    <button class="btn btn-primary w-100">Create healthcare provider account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function validateProviderCreation() {
+    const password = document.getElementById("provider_password").value;
+    const confirmPassword = document.getElementById("provider_confirm_password").value;
+    const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+
+    if (!strongPassword.test(password)) {
+        alert("Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number and one special character.");
+        return false;
+    }
+    if (password !== confirmPassword) {
+        alert("Passwords do not match.");
+        return false;
+    }
+    return true;
+}
+</script>
+
+{% endblock %}

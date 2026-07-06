@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                    <th>Sent</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for notification in notifications %}
+                <tr>
+                    <td>#{{ notification.id }}</td>
+                    <td>{{ notification.message }}</td>
+                    <td>
+                        <span class="status-pill {% if notification.notification_status == 'UNREAD' %}pill-unread{% else %}pill-read{% endif %}">
+                            {{ notification.notification_status|capfirst }}
+                        </span>
+                    </td>
+                    <td>{{ notification.sent_at }}</td>
+                    <td>
+                        {% if notification.notification_status == "UNREAD" %}
+                        <form method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="notification_id" value="{{ notification.id }}">
+                            <button class="act-btn approve">
+                                <i class="ti ti-check" aria-hidden="true"></i> Mark as read
+                            </button>
+                        </form>
+                        {% else %}
+                        <span style="color:#aaa;font-size:12px">Read</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center" style="padding:24px;color:#888">
+                        <i class="ti ti-bell-off" style="font-size:24px;display:block;margin-bottom:8px;opacity:.4" aria-hidden="true"></i>
+                        No notifications
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

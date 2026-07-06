@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block page_title %}System Administrator Dashboard{% endblock %}
+
+{% block content %}
+
+<p style="color:#666;font-size:13px;margin-bottom:20px">
+    Welcome back, <strong>{{ admin_name }}</strong>
+</p>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card accent-teal">
+            <div class="stat-label">Patients</div>
+            <div class="stat-num">{{ total_patients }}</div>
+            <div class="stat-sub">Registered in system</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card accent-teal">
+            <div class="stat-label">Healthcare Providers</div>
+            <div class="stat-num">{{ total_providers }}</div>
+            <div class="stat-sub">Registered in system</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card accent-teal">
+            <div class="stat-label">Insurance Providers</div>
+            <div class="stat-num">{{ total_insurance_providers }}</div>
+            <div class="stat-sub">Registered in system</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Total User Accounts</div>
+            <div class="stat-num">{{ total_users }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-7">
+        <div class="chart-card">
+            <div class="chart-title">User accounts by role</div>
+            <div class="chart-wrap">
+                <canvas id="adminUsersBarChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="chart-card">
+            <div class="chart-title">Role distribution</div>
+            <div class="chart-wrap">
+                <canvas id="adminUsersDoughnutChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="qa-grid">
+    <a href="{% url 'create_provider' %}" class="qa-card">
+        <i class="ti ti-user-plus" aria-hidden="true"></i>
+        <span>Create healthcare provider</span>
+    </a>
+    <a href="{% url 'create_insurance_provider' %}" class="qa-card">
+        <i class="ti ti-shield-plus" aria-hidden="true"></i>
+        <span>Create insurance provider</span>
+    </a>
+    <a href="{% url 'manage_users' %}" class="qa-card">
+        <i class="ti ti-users" aria-hidden="true"></i>
+        <span>Manage users</span>
+    </a>
+    <a href="{% url 'audit_logs' %}" class="qa-card">
+        <i class="ti ti-shield-check" aria-hidden="true"></i>
+        <span>Audit logs</span>
+    </a>
+    <a href="{% url 'reports' %}" class="qa-card">
+        <i class="ti ti-chart-bar" aria-hidden="true"></i>
+        <span>Generate system reports</span>
+    </a>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const adminUserLabels = ['Patients', 'Providers', 'Insurance Providers', 'Admins'];
+    const adminUserValues = [
+        Number('{{ total_patients|default:0 }}'),
+        Number('{{ total_providers|default:0 }}'),
+        Number('{{ total_insurance_providers|default:0 }}'),
+        Number('{{ total_admins|default:0 }}')
+    ];
+    const adminUserColors = ['#0F6E56', '#4D6F9F', '#BA7517', '#639922'];
+
+    const adminUsersBarChart = document.getElementById('adminUsersBarChart');
+    const adminUsersDoughnutChart = document.getElementById('adminUsersDoughnutChart');
+
+    if (adminUsersBarChart) {
+        new Chart(adminUsersBarChart, {
+            type: 'bar',
+            data: {
+                labels: adminUserLabels,
+                datasets: [{
+                    label: 'Accounts',
+                    data: adminUserValues,
+                    backgroundColor: adminUserColors,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    if (adminUsersDoughnutChart) {
+        new Chart(adminUsersDoughnutChart, {
+            type: 'doughnut',
+            data: {
+                labels: adminUserLabels,
+                datasets: [{
+                    data: adminUserValues,
+                    backgroundColor: adminUserColors,
+                    borderColor: '#fff',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 16
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

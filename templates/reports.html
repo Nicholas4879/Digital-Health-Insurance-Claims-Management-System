@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+
+{% block page_title %}System Reports{% endblock %}
+
+{% block content %}
+
+<div class="card mb-4">
+    <div class="p-4">
+        <form method="POST">
+            {% csrf_token %}
+            <div class="row g-3 align-items-end">
+                <div class="col-md-8">
+                    <label class="form-label">Report type</label>
+                    <select name="report_type" class="form-select" required>
+                        <option value="">Select report type</option>
+                        <option value="CLAIMS" {% if selected_type == "CLAIMS" %}selected{% endif %}>Claims Report</option>
+                        <option value="COMPLAINTS" {% if selected_type == "COMPLAINTS" %}selected{% endif %}>Inquiries Report</option>
+                        <option value="PERFORMANCE" {% if selected_type == "PERFORMANCE" %}selected{% endif %}>Performance Report</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary w-100">
+                        <i class="ti ti-chart-bar" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"></i>
+                        Generate report
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card accent-teal">
+            <div class="stat-label">Total Claims</div>
+            <div class="stat-num">{{ total_claims }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card accent-green">
+            <div class="stat-label">Approved</div>
+            <div class="stat-num">{{ approved_claims }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card accent-red">
+            <div class="stat-label">Rejected</div>
+            <div class="stat-num">{{ rejected_claims }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Inquiries</div>
+            <div class="stat-num">{{ total_complaints }}</div>
+        </div>
+    </div>
+</div>
+
+{% if selected_type %}
+<div class="card mb-4">
+    <div class="card-header-teal">
+        {% if selected_type == "CLAIMS" %}Claims report
+        {% elif selected_type == "COMPLAINTS" %}Inquiries report
+        {% elif selected_type == "PERFORMANCE" %}Performance report
+        {% endif %}
+    </div>
+
+    {% if selected_type == "CLAIMS" %}
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Claim ID</th>
+                    <th>Patient</th>
+                    <th>Provider</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for claim in report_claims %}
+                <tr>
+                    <td>#{{ claim.id }}</td>
+                    <td>{{ claim.patient.user.first_name }} {{ claim.patient.user.last_name }}</td>
+                    <td>{{ claim.provider.hospital_name }}</td>
+                    <td>{{ claim.claim_type }}</td>
+                    <td>{{ claim.claim_amount }}</td>
+                    <td>
+                        <span class="status-pill
+                            {% if claim.claim_status == 'PENDING' %}pill-pending
+                            {% elif claim.claim_status == 'APPROVED' %}pill-approved
+                            {% elif claim.claim_status == 'REJECTED' %}pill-rejected
+                            {% endif %}">
+                            {{ claim.claim_status|capfirst }}
+                        </span>
+                    </td>
+                    <td>{{ claim.submission_date }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center" style="padding:24px;color:#888">No claims found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% elif selected_type == "COMPLAINTS" %}
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Inquiry ID</th>
+                    <th>Claim</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                    <th>Filed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for complaint in report_complaints %}
+                <tr>
+                    <td>#{{ complaint.id }}</td>
+                    <td>Claim #{{ complaint.claim.id }}</td>
+                    <td>{{ complaint.complaint_message }}</td>
+                    <td>
+                        <span class="status-pill
+                            {% if complaint.complaint_status == 'PENDING' %}pill-open
+                            {% else %}pill-resolved
+                            {% endif %}">
+                            {{ complaint.complaint_status|capfirst }}
+                        </span>
+                    </td>
+                    <td>{{ complaint.created_at }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center" style="padding:24px;color:#888">No inquiries found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% elif selected_type == "PERFORMANCE" %}
+    <div class="p-4">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <span style="color:#666;font-size:13px">Total claims</span><br>
+                <strong style="font-size:20px">{{ total_claims }}</strong>
+            </div>
+            <div class="col-md-3">
+                <span style="color:#666;font-size:13px">Approval rate</span><br>
+                <strong style="font-size:20px">{{ approval_rate }}%</strong>
+            </div>
+            <div class="col-md-3">
+                <span style="color:#666;font-size:13px">Pending claims</span><br>
+                <strong style="font-size:20px">{{ pending_claims }}</strong>
+            </div>
+            <div class="col-md-3">
+                <span style="color:#666;font-size:13px">Total inquiries</span><br>
+                <strong style="font-size:20px">{{ total_complaints }}</strong>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-7">
+        <div class="chart-card">
+            <div class="chart-title">Claims summary</div>
+            <div class="chart-wrap">
+                <canvas id="reportsClaimsChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="chart-card">
+            <div class="chart-title">Claims and inquiries</div>
+            <div class="chart-wrap">
+                <canvas id="reportsOverviewChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="font-size:14px;font-weight:500;margin-bottom:12px">Generated reports</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Report ID</th>
+                    <th>Type</th>
+                    <th>Generated by</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr>
+                    <td>#{{ report.id }}</td>
+                    <td>{{ report.report_type }}</td>
+                    <td>{{ report.generated_by.username|default:"-" }}</td>
+                    <td>{{ report.generated_at }}</td>
+                    <td>
+                        <span class="status-pill pill-approved">{{ report.report_status }}</span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center" style="padding:24px;color:#888">
+                        No reports generated yet
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const reportsClaimsChart = document.getElementById('reportsClaimsChart');
+    const reportsOverviewChart = document.getElementById('reportsOverviewChart');
+
+    if (reportsClaimsChart) {
+        new Chart(reportsClaimsChart, {
+            type: 'bar',
+            data: {
+                labels: ['Pending', 'Approved', 'Rejected'],
+                datasets: [{
+                    label: 'Claims',
+                    data: [Number('{{ pending_claims|default:"0" }}'), Number('{{ approved_claims|default:"0" }}'), Number('{{ rejected_claims|default:"0" }}')],
+                    backgroundColor: ['#BA7517', '#639922', '#E24B4A'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    if (reportsOverviewChart) {
+        new Chart(reportsOverviewChart, {
+            type: 'doughnut',
+            data: {
+                labels: ['Claims', 'Inquiries'],
+                datasets: [{
+                    data: [Number('{{ total_claims|default:0 }}'), Number('{{ total_complaints|default:0 }}')],
+                    backgroundColor: ['#0F6E56', '#4D6F9F'],
+                    borderColor: '#fff',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 16
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

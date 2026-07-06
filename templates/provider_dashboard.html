@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Healthcare Provider Dashboard{% endblock %}
+
+{% block content %}
+
+<p style="color:#666;font-size:13px;margin-bottom:20px">
+    Welcome back, <strong>{{ provider_name }}</strong>
+</p>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card accent-teal">
+            <div class="stat-label">Submitted Claims</div>
+            <div class="stat-num">{{ submitted_claims }}</div>
+            <div class="stat-sub">All time</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card accent-green">
+            <div class="stat-label">Approved</div>
+            <div class="stat-num">{{ approved_claims }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card accent-amber">
+            <div class="stat-label">Pending</div>
+            <div class="stat-num">{{ pending_claims }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card accent-red">
+            <div class="stat-label">Rejected</div>
+            <div class="stat-num">{{ rejected_claims }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="chart-card mb-4">
+    <div class="chart-title">Submitted claims by status</div>
+    <div class="chart-wrap">
+        <canvas id="providerClaimsChart"></canvas>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header-teal">Provider information</div>
+    <div class="p-3" style="font-size:13px">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <span style="color:#666">Hospital</span><br>
+                <strong>{{ provider.hospital_name }}</strong>
+            </div>
+            <div class="col-md-4">
+                <span style="color:#666">License number</span><br>
+                <strong>{{ provider.license_number }}</strong>
+            </div>
+            <div class="col-md-2">
+                <span style="color:#666">Specialization</span><br>
+                <strong>{{ provider.specialization }}</strong>
+            </div>
+            <div class="col-md-2">
+                <span style="color:#666">Unread notifications</span><br>
+                <strong>{{ notifications }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="qa-grid">
+    <a href="{% url 'submit_claim' %}" class="qa-card">
+        <i class="ti ti-file-plus" aria-hidden="true"></i>
+        <span>Submit new claim</span>
+    </a>
+    <a href="{% url 'track_claim' %}" class="qa-card">
+        <i class="ti ti-list-search" aria-hidden="true"></i>
+        <span>View submitted claims</span>
+    </a>
+    <a href="{% url 'notifications' %}" class="qa-card">
+        <i class="ti ti-bell" aria-hidden="true"></i>
+        <span>Notifications</span>
+    </a>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const providerClaimsChart = document.getElementById('providerClaimsChart');
+
+    if (providerClaimsChart) {
+        new Chart(providerClaimsChart, {
+            type: 'bar',
+            data: {
+                labels: ['Approved', 'Pending', 'Rejected'],
+                datasets: [{
+                    label: 'Claims',
+                    data: [{{ approved_claims }}, {{ pending_claims }}, {{ rejected_claims }}],
+                    backgroundColor: ['#639922', '#BA7517', '#E24B4A'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

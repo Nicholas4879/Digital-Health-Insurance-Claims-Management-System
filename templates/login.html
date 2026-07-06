@@ -1,0 +1,159 @@
+{% extends 'base_public.html' %}
+
+{% block title %}Sign In — DHICMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --teal: #0F6E56;
+        --teal-mid: #1D9E75;
+        --teal-light: #E1F5EE;
+    }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(160deg, var(--teal) 0%, var(--teal-mid) 45%, #0b3d31 100%);
+        font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+    }
+
+    .auth-wrap {
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .auth-brand {
+        text-align: center;
+        margin-bottom: 22px;
+    }
+    .auth-brand .abbr {
+        color: #fff;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: .02em;
+    }
+    .auth-brand .sys-name {
+        color: rgba(255,255,255,0.8);
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    .auth-card {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 20px 45px rgba(0,0,0,0.18);
+        overflow: hidden;
+    }
+
+    .auth-card-header {
+        background: var(--teal);
+        color: #fff;
+        padding: 20px 28px;
+    }
+    .auth-card-header .title { font-size: 17px; font-weight: 600; }
+    .auth-card-header .subtitle { font-size: 12px; opacity: .8; margin-top: 3px; }
+
+    .auth-card-body { padding: 28px; }
+
+    .form-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 6px;
+    }
+
+    .form-control {
+        border: 1px solid #dfe3e6;
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+    .form-control:focus {
+        border-color: var(--teal-mid);
+        box-shadow: 0 0 0 3px rgba(29,158,117,0.15);
+    }
+
+    .btn-primary {
+        background: var(--teal);
+        border-color: var(--teal);
+        border-radius: 8px;
+        padding: 11px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background .15s;
+    }
+    .btn-primary:hover, .btn-primary:focus {
+        background: var(--teal-mid);
+        border-color: var(--teal-mid);
+    }
+
+    .auth-footer-link {
+        text-align: center;
+        margin-top: 18px;
+        font-size: 13px;
+        color: rgba(255,255,255,0.85);
+    }
+    .auth-footer-link a {
+        color: #fff;
+        font-weight: 600;
+        text-decoration: underline;
+    }
+
+    .alert-danger {
+        border: none;
+        background: #FDEDED;
+        color: #B3261E;
+        border-radius: 8px;
+        font-size: 13px;
+        padding: 10px 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="auth-wrap">
+    <div class="auth-brand">
+        <div class="abbr">DHICMS</div>
+        <div class="sys-name">Digital Health Insurance Claims Management System</div>
+    </div>
+
+    <div class="auth-card">
+        <div class="auth-card-header">
+            <div class="title">Sign in</div>
+            <div class="subtitle">Health Insurance Claims System</div>
+        </div>
+
+        <div class="auth-card-body">
+            {% if error %}
+            <div class="alert alert-danger mb-3">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input type="text" name="username" class="form-control" placeholder="Your username" required autofocus>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Sign in</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="auth-footer-link">
+        No account? <a href="{% url 'register' %}">Register as patient</a>
+    </div>
+</div>
+
+{% endblock %}

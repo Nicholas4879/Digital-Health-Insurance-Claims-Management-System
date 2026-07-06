@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+
+{% if error %}
+<div class="alert alert-danger mb-3">{{ error }}</div>
+{% endif %}
+{% if success %}
+<div class="alert alert-success mb-3">{{ success }}</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header-teal">Personal and insurance details</div>
+    <div class="p-4">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">First name</label>
+                    <input type="text" name="first_name" value="{{ request.user.first_name }}" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Last name</label>
+                    <input type="text" name="last_name" value="{{ request.user.last_name }}" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Email address</label>
+                    <input type="email" name="email" value="{{ request.user.email }}" class="form-control" required>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Phone number</label>
+                    <input type="text" name="phone_number" value="{{ patient.phone_number }}" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">National ID / passport</label>
+                    <input type="text" name="national_id" value="{{ patient.national_id }}" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Date of birth</label>
+                    <input type="date" name="date_of_birth" value="{{ patient.date_of_birth|date:'Y-m-d' }}" class="form-control">
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Gender</label>
+                    <select name="gender" class="form-select">
+                        <option value="">Select gender</option>
+                        <option value="Male" {% if patient.gender == "Male" %}selected{% endif %}>Male</option>
+                        <option value="Female" {% if patient.gender == "Female" %}selected{% endif %}>Female</option>
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Address</label>
+                    <textarea name="address" class="form-control" rows="2">{{ patient.address }}</textarea>
+                </div>
+            </div>
+
+            <hr class="form-divider">
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Insurance number</label>
+                    <input type="text" name="insurance_number" value="{{ patient.insurance_number }}" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Insurance company</label>
+                    <input
+                        type="text"
+                        name="insurance_company_search"
+                        class="form-control"
+                        list="insuranceCompanies"
+                        value="{% if patient.insurance_company %}{{ patient.insurance_company.name }} (#{{ patient.insurance_company.id }}){% endif %}"
+                        placeholder="Search insurance company"
+                    >
+                    <datalist id="insuranceCompanies">
+                        {% for company in insurance_companies %}
+                        <option value="{{ company.name }} (#{{ company.id }})"></option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Policy number</label>
+                    <input type="text" name="policy_number" value="{{ patient.policy_number }}" class="form-control">
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Membership number</label>
+                    <input type="text" name="membership_number" value="{{ patient.membership_number }}" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Insurance card number</label>
+                    <input type="text" name="insurance_card_number" value="{{ patient.insurance_card_number }}" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Plan type</label>
+                    <select name="plan_type" class="form-select">
+                        <option value="">Select plan type</option>
+                        <option value="BASIC" {% if patient.plan_type == "BASIC" %}selected{% endif %}>Basic</option>
+                        <option value="PREMIUM" {% if patient.plan_type == "PREMIUM" %}selected{% endif %}>Premium</option>
+                        <option value="CORPORATE" {% if patient.plan_type == "CORPORATE" %}selected{% endif %}>Corporate</option>
+                        <option value="FAMILY" {% if patient.plan_type == "FAMILY" %}selected{% endif %}>Family</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Coverage start</label>
+                    <input type="date" name="coverage_start_date" value="{{ patient.coverage_start_date|date:'Y-m-d' }}" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Coverage end</label>
+                    <input type="date" name="coverage_end_date" value="{{ patient.coverage_end_date|date:'Y-m-d' }}" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Policy status</label>
+                    <select name="policy_status" class="form-select">
+                        <option value="PENDING_VERIFICATION" {% if patient.policy_status == "PENDING_VERIFICATION" %}selected{% endif %}>Pending Verification</option>
+                        <option value="ACTIVE" {% if patient.policy_status == "ACTIVE" %}selected{% endif %}>Active</option>
+                        <option value="EXPIRED" {% if patient.policy_status == "EXPIRED" %}selected{% endif %}>Expired</option>
+                        <option value="SUSPENDED" {% if patient.policy_status == "SUSPENDED" %}selected{% endif %}>Suspended</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr class="form-divider">
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Principal member name</label>
+                    <input type="text" name="principal_member_name" value="{{ patient.principal_member_name }}" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Relationship to principal</label>
+                    <input type="text" name="relationship_to_principal" value="{{ patient.relationship_to_principal }}" class="form-control">
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Employer name</label>
+                    <input type="text" name="employer_name" value="{{ patient.employer_name }}" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Employer code</label>
+                    <input type="text" name="employer_code" value="{{ patient.employer_code }}" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Corporate scheme</label>
+                    <input type="text" name="corporate_scheme_name" value="{{ patient.corporate_scheme_name }}" class="form-control">
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Next of kin name</label>
+                    <input type="text" name="next_of_kin_name" value="{{ patient.next_of_kin_name }}" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Next of kin phone</label>
+                    <input type="text" name="next_of_kin_phone" value="{{ patient.next_of_kin_phone }}" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Relationship</label>
+                    <input type="text" name="next_of_kin_relationship" value="{{ patient.next_of_kin_relationship }}" class="form-control">
+                </div>
+            </div>
+
+            <button class="btn btn-primary">Save changes</button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
