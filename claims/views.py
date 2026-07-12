@@ -43,6 +43,7 @@ def submit_claim(request, claim_id=None):
             "error": "Only healthcare providers can submit claims."
         })
 
+    # Check whether this is a resubmission
     if claim_id:
         resubmitting_claim = get_object_or_404(
             Claim,
@@ -52,6 +53,7 @@ def submit_claim(request, claim_id=None):
         )
 
     if request.method == "POST":
+
         patient_id = (
             request.POST.get("patient")
             or get_lookup_id(request.POST.get("patient_search"))
@@ -65,57 +67,107 @@ def submit_claim(request, claim_id=None):
                 "error": "Please select a patient from the search suggestions."
             })
 
-        patient = Patient.objects.get(id=patient_id)
+        patient = get_object_or_404(Patient, id=patient_id)
 
-        claim = Claim.objects.create(
-            patient=patient,
-            provider=request.user.healthcareprovider,
-            insurance_company=patient.insurance_company,
-            claim_type=request.POST.get("claim_type"),
-            claim_amount=request.POST.get("claim_amount"),
-            description=request.POST.get("description"),
-            claim_status="PENDING"
-        )
+        # ===============================
+        # RESUBMIT EXISTING CLAIM
+        # ===============================
+        if resubmitting_claim:
 
+            claim = resubmitting_claim
+
+            claim.patient = patient
+            claim.provider = request.user.healthcareprovider
+            claim.insurance_company = patient.insurance_company
+            claim.claim_type = request.POST.get("claim_type")
+            claim.claim_amount = request.POST.get("claim_amount")
+            claim.description = request.POST.get("description")
+            claim.claim_status = "PENDING"
+            claim.rejection_reason = ""
+            claim.approved_by = None
+
+            claim.save()
+
+            # Delete previous supporting documents
+            Document.objects.filter(claim=claim).delete()
+
+        # ===============================
+        # NEW CLAIM
+        # ===============================
+        else:
+
+            claim = Claim.objects.create(
+                patient=patient,
+                provider=request.user.healthcareprovider,
+                insurance_company=patient.insurance_company,
+                claim_type=request.POST.get("claim_type"),
+                claim_amount=request.POST.get("claim_amount"),
+                description=request.POST.get("description"),
+                claim_status="PENDING"
+            )
+
+        # ===============================
+        # Upload new document
+        # ===============================
         if request.FILES.get("file_path"):
+
             Document.objects.create(
                 claim=claim,
                 document_name=request.POST.get("document_name"),
                 document_type=request.POST.get("document_type"),
-                file_path=request.FILES.get("file_path")
+                file_path=request.FILES["file_path"]
             )
 
+        # ===============================
+        # Notify patient
+        # ===============================
         notify_user(
             claim.patient.user,
             f"Your claim #{claim.id} has been submitted and is pending review.",
             claim
         )
 
+        # ===============================
+        # Audit log
+        # ===============================
         record_action(
             request.user,
-            "Resubmitted a rejected claim" if resubmitting_claim else "Submitted a claim",
+            "Resubmitted claim" if resubmitting_claim else "Submitted claim",
             "Claim",
             claim.id
         )
 
-        return redirect("provider_dashboard")
+        return redirect("track_claim")
+
+    # ==================================
+    # Pre-fill form when resubmitting
+    # ==================================
 
     form_values = {}
+
     if resubmitting_claim:
-        document = Document.objects.filter(claim=resubmitting_claim).first()
+
+        document = Document.objects.filter(
+            claim=resubmitting_claim
+        ).first()
+
         form_values = {
             "patient_id": resubmitting_claim.patient.id,
-            "patient_label": (
+            "patient_label":
                 f"{resubmitting_claim.patient.user.get_full_name()} - "
                 f"{resubmitting_claim.patient.insurance_number} "
-                f"(#{resubmitting_claim.patient.id})"
-            ),
+                f"(#{resubmitting_claim.patient.id})",
+
             "claim_type": resubmitting_claim.claim_type,
             "claim_amount": resubmitting_claim.claim_amount,
             "description": resubmitting_claim.description,
             "rejection_reason": resubmitting_claim.rejection_reason,
-            "document_name": document.document_name if document else "",
-            "document_type": document.document_type if document else "",
+
+            "document_name":
+                document.document_name if document else "",
+
+            "document_type":
+                document.document_type if document else "",
         }
 
     return render(request, "submit_claim.html", {
@@ -123,7 +175,6 @@ def submit_claim(request, claim_id=None):
         "form_values": form_values,
         "resubmitting_claim": resubmitting_claim,
     })
-
 
 @login_required
 def track_claim(request):
@@ -148,72 +199,135 @@ def manage_claims(request):
     if not is_insurance_provider(request.user):
         return redirect("login")
 
-    if request.user.role == "INSURANCE_PROVIDER" and not hasattr(request.user, "insuranceprovider"):
+    if (
+        request.user.role == "INSURANCE_PROVIDER"
+        and not hasattr(request.user, "insuranceprovider")
+    ):
         InsuranceProvider.objects.create(user=request.user)
 
-    insurance_profile = getattr(request.user, "insuranceprovider", None)
-    pending_claims = Claim.objects.filter(
-    insurance_company=insurance_profile.insurance_company,
-    claim_status="PENDING"
-).prefetch_related("document_set")
+    insurance_profile = request.user.insuranceprovider
 
+    # Process approval/rejection
     if request.method == "POST":
+
+        claim = get_object_or_404(
+            Claim,
+            id=request.POST.get("claim_id"),
+            insurance_company=insurance_profile.insurance_company,
+        )
+
         action = request.POST.get("action")
 
-        if action in ["approve", "reject"]:
-            claim = Claim.objects.get(id=request.POST.get("claim_id"))
+        if action == "approve":
 
-            if action == "approve":
-                claim.claim_status = "APPROVED"
-                claim.approved_by = insurance_profile
-                claim.rejection_reason = ""
-                message = f"Your claim #{claim.id} has been approved."
-                audit_message = "Approved claim"
-            else:
-                rejection_reason = request.POST.get("rejection_reason", "").strip()
-                if not rejection_reason:
-                    return render(request, "manage_claims.html", {
-                        "claims": pending_claims,
-                        "documents": Document.objects.all(),
-                        "error": "Please provide a reason before rejecting a claim."
-                    })
-
-                claim.claim_status = "REJECTED"
-                claim.approved_by = insurance_profile
-                claim.rejection_reason = rejection_reason
-                message = (
-                    f"Your claim #{claim.id} has been rejected. "
-                    f"Reason: {rejection_reason}"
-                )
-                audit_message = "Rejected claim"
-
+            claim.claim_status = "APPROVED"
+            claim.approved_by = insurance_profile
+            claim.rejection_reason = ""
             claim.save()
 
-            notify_user(claim.patient.user, message, claim, insurance_profile)
-            notify_user(claim.provider.user, message, claim, insurance_profile)
+            notify_user(
+                claim.patient.user,
+                f"Your claim #{claim.id} has been approved.",
+                claim,
+                insurance_profile,
+            )
 
-            record_action(request.user, audit_message, "Claim", claim.id)
+            notify_user(
+                claim.provider.user,
+                f"Claim #{claim.id} has been approved.",
+                claim,
+                insurance_profile,
+            )
 
-        elif action in ["verify_document", "reject_document"]:
-            document = Document.objects.get(id=request.POST.get("document_id"))
+            record_action(
+                request.user,
+                "Approved claim",
+                "Claim",
+                claim.id,
+            )
 
-            if action == "verify_document":
-                document.verification_status = "VERIFIED"
-                document.verified_by = insurance_profile
-                audit_message = "Verified supporting document"
-            else:
-                document.verification_status = "REJECTED"
-                document.verified_by = insurance_profile
-                audit_message = "Rejected supporting document"
+        elif action == "reject":
 
-            document.verified_at = timezone.now()
-            document.save()
+            rejection_reason = request.POST.get(
+                "rejection_reason",
+                ""
+            ).strip()
 
-            record_action(request.user, audit_message, "Document", document.id)
+            if not rejection_reason:
+
+                status_filter = request.GET.get("status", "")
+
+                claims = Claim.objects.filter(
+                    insurance_company=insurance_profile.insurance_company
+                ).prefetch_related("document_set").order_by("-submission_date")
+
+                if status_filter:
+                    claims = claims.filter(
+                        claim_status=status_filter
+                    )
+
+                return render(
+                    request,
+                    "manage_claims.html",
+                    {
+                        "claims": claims,
+                        "status_filter": status_filter,
+                        "error": "Please provide a reason before rejecting a claim.",
+                    },
+                )
+
+            claim.claim_status = "REJECTED"
+            claim.approved_by = insurance_profile
+            claim.rejection_reason = rejection_reason
+            claim.save()
+
+            notify_user(
+                claim.patient.user,
+                f"Your claim #{claim.id} has been rejected.\nReason: {rejection_reason}",
+                claim,
+                insurance_profile,
+            )
+
+            notify_user(
+                claim.provider.user,
+                f"Claim #{claim.id} has been rejected.\nReason: {rejection_reason}",
+                claim,
+                insurance_profile,
+            )
+
+            record_action(
+                request.user,
+                "Rejected claim",
+                "Claim",
+                claim.id,
+            )
 
         return redirect("manage_claims")
 
-    return render(request, "manage_claims.html", {
-        "claims": pending_claims,
-        "documents": Document.objects.all()
-    })
+    # -------------------------
+    # FILTER CLAIMS
+    # -------------------------
+
+    status_filter = request.GET.get("status", "")
+
+    claims = Claim.objects.filter(
+        insurance_company=insurance_profile.insurance_company
+    ).prefetch_related(
+        "document_set"
+    ).order_by(
+        "-submission_date"
+    )
+
+    if status_filter:
+        claims = claims.filter(
+            claim_status=status_filter
+        )
+
+    return render(
+        request,
+        "manage_claims.html",
+        {
+            "claims": claims,
+            "status_filter": status_filter,
+        },
+    )

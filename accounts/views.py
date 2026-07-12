@@ -730,7 +730,8 @@ def notifications(request):
 
 @login_required
 def manage_claims(request):
-    """Insurance Provider: View and process only claims belonging to their insurance company."""
+    """Insurance Provider: View and process claims belonging to their insurance company."""
+
     if not is_insurance_provider(request.user):
         return redirect("login")
 
@@ -745,46 +746,76 @@ def manage_claims(request):
 
         action = request.POST.get("action")
 
-        if claim and action == "approve":
-            claim.claim_status = "APPROVED"
-            claim.approved_by = insurance_profile
-            claim.rejection_reason = ""
-            claim.save()
+        if claim and claim.claim_status == "PENDING":
 
-            record_action(
-                request.user,
-                "Approved claim",
-                "Claim",
-                claim.id
-            )
+            if action == "approve":
+                claim.claim_status = "APPROVED"
+                claim.approved_by = insurance_profile
+                claim.rejection_reason = ""
+                claim.save()
 
-        elif claim and action == "reject":
-            rejection_reason = request.POST.get(
-                "rejection_reason",
-                ""
-            ).strip()
+                Notification.objects.create(
+                    user=claim.patient.user,
+                    claim=claim,
+                    sent_by=insurance_profile,
+                    message=f"Your claim #{claim.id} has been approved."
+                )
 
-            if not rejection_reason:
-                claims = Claim.objects.filter(
-                    insurance_company=company
-                ).order_by("-id")
+                Notification.objects.create(
+                    user=claim.provider.user,
+                    claim=claim,
+                    sent_by=insurance_profile,
+                    message=f"Claim #{claim.id} for your patient has been approved."
+                )
 
-                return render(request, "manage_claims.html", {
-                    "claims": claims,
-                    "error": "A reason is required to reject a claim."
-                })
+                record_action(
+                    request.user,
+                    "Approved claim",
+                    "Claim",
+                    claim.id
+                )
 
-            claim.claim_status = "REJECTED"
-            claim.rejection_reason = rejection_reason
-            claim.approved_by = insurance_profile
-            claim.save()
+            elif action == "reject":
+                rejection_reason = request.POST.get(
+                    "rejection_reason",
+                    ""
+                ).strip()
 
-            record_action(
-                request.user,
-                f"Rejected claim: {rejection_reason}",
-                "Claim",
-                claim.id
-            )
+                if not rejection_reason:
+                    claims = Claim.objects.filter(
+                        insurance_company=company
+                    ).order_by("-submission_date")
+
+                    return render(request, "manage_claims.html", {
+                        "claims": claims,
+                        "error": "A reason is required to reject a claim."
+                    })
+
+                claim.claim_status = "REJECTED"
+                claim.rejection_reason = rejection_reason
+                claim.approved_by = insurance_profile
+                claim.save()
+
+                Notification.objects.create(
+                    user=claim.patient.user,
+                    claim=claim,
+                    sent_by=insurance_profile,
+                    message=f"Your claim #{claim.id} has been rejected. Reason: {rejection_reason}"
+                )
+
+                Notification.objects.create(
+                    user=claim.provider.user,
+                    claim=claim,
+                    sent_by=insurance_profile,
+                    message=f"Claim #{claim.id} has been rejected. Reason: {rejection_reason}"
+                )
+
+                record_action(
+                    request.user,
+                    f"Rejected claim: {rejection_reason}",
+                    "Claim",
+                    claim.id
+                )
 
         return redirect("manage_claims")
 
@@ -792,7 +823,7 @@ def manage_claims(request):
 
     claims = Claim.objects.filter(
         insurance_company=company
-    ).order_by("-id")
+    ).prefetch_related("document_set").order_by("-submission_date")
 
     if status_filter:
         claims = claims.filter(
